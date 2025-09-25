@@ -1,93 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@0.3.1/dist/mindar.prod.js"></script>
+  </head>
+  <body>
+    <a-scene mindar="imageTargetSrc: ./targets.mind; showStats: true;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+      <a-assets>
+    <img id="card" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@0.3.1/examples/assets/card-example/card.png" />
+    <a-asset-item id="avatarModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@0.3.1/examples/assets/card-example/softmind/scene.gltf"></a-asset-item>
+      </a-assets>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="AR Test Application">
-  
-  <!-- Camera permission requirements -->
-  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
-  <meta name="theme-color" content="#000000">
-  
-  <title>AR Test</title>
-  
-  <!-- Load scripts in correct order without duplicates -->
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-</head>
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-<body>
-  <!-- Loading indicator -->
-  <div id="loading" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: Arial, sans-serif; z-index: 1000;">
-    <p>Loading AR... Please allow camera access when prompted.</p>
-  </div>
-  
-  <!-- Error message for camera issues -->
-  <div id="error" style="position: fixed; top: 20px; left: 20px; right: 20px; background: red; color: white; padding: 10px; border-radius: 5px; display: none; z-index: 1000;">
-    <p id="error-message"></p>
-    <button onclick="location.reload()">Try Again</button>
-  </div>
-
-  <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; uiLoading: no; uiError: no;" 
-           vr-mode-ui="enabled: false"
-           device-orientation-permission-ui="enabled: false"
-           loading-screen="enabled: false"
-           embedded
-           style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
-    
-    <a-camera position="0 0 0" 
-              look-controls="enabled: false" 
-              cursor="rayOrigin: mouse"
-              raycaster="objects: .clickable"></a-camera>
-    
-    <a-entity mindar-image-target="targetIndex: 0">
-      <a-plane color="blue" opacity="0.5" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
-    </a-entity>
-  </a-scene>
-
-  <script>
-    // Handle loading and error states
-    document.addEventListener('DOMContentLoaded', function() {
-      const scene = document.querySelector('a-scene');
-      const loading = document.getElementById('loading');
-      const errorDiv = document.getElementById('error');
-      const errorMessage = document.getElementById('error-message');
-
-      // Hide loading when AR is ready
-      scene.addEventListener('renderstart', function() {
-        loading.style.display = 'none';
-      });
-
-      // Handle camera errors
-      scene.addEventListener('arError', function(event) {
-        loading.style.display = 'none';
-        errorDiv.style.display = 'block';
-        
-        if (event.detail && event.detail.error) {
-          if (event.detail.error.name === 'NotAllowedError') {
-            errorMessage.textContent = 'Camera access denied. Please refresh and allow camera access.';
-          } else if (event.detail.error.name === 'NotFoundError') {
-            errorMessage.textContent = 'No camera found. Please check your device camera.';
-          } else if (event.detail.error.name === 'NotSupportedError') {
-            errorMessage.textContent = 'AR not supported on this device/browser.';
-          } else {
-            errorMessage.textContent = 'Camera error: ' + event.detail.error.message;
-          }
-        } else {
-          errorMessage.textContent = 'Failed to start camera. Make sure you are using HTTPS and allow camera permissions.';
-        }
-      });
-
-      // Check if we're on HTTPS (required for camera access)
-      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-        loading.style.display = 'none';
-        errorDiv.style.display = 'block';
-        errorMessage.textContent = 'HTTPS required for camera access. Please use https:// URL.';
-      }
-    });
-  </script>
-</body>
-
+      <a-entity mindar-image-target="targetIndex: 0">
+    <a-plane src="#card" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+    <a-gltf-model rotation="0 0 0 " position="0 0 0.1" scale="0.005 0.005 0.005" src="#avatarModel"
+      animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
+    >
+      </a-entity>
+    </a-scene>
+  </body>
 </html>
