@@ -9,6 +9,8 @@
   
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <!-- DotLottie Web Component -->
+  <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.1/dist/dotlottie-wc.js" type="module"></script>
   
   <style>
     body {
@@ -28,9 +30,26 @@
       font-family: Arial, sans-serif;
       z-index: 1000;
     }
+    #lottie-container {
+      position: absolute;
+      top: -1000px;
+      left: -1000px;
+      visibility: hidden;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
+  <!-- Hidden DotLottie container -->
+  <div id="lottie-container">
+    <dotlottie-wc id="dotlottie" 
+                   src="https://lottie.host/7099a121-e240-416d-909e-31c814100a1e/fPOEbKVhJI.lottie" 
+                   style="width: 512px; height: 512px;" 
+                   autoplay 
+                   loop>
+    </dotlottie-wc>
+  </div>
+
   <div id="loading">
     <p>Loading AR... Please allow camera access.</p>
   </div>
@@ -42,60 +61,100 @@
            style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
     
     <a-assets>
-      <!-- Using a direct video file instead of YouTube embed -->
-      <!-- Note: YouTube embeds don't work directly in A-Frame. You need a direct video file -->
-      <!-- For now, I'll create a placeholder. You'll need to provide a direct .mp4 video URL -->
-      <video id="video" 
-             crossorigin="anonymous" 
-             preload="auto" 
-             autoplay 
-             muted 
-             loop
-             playsinline>
-        <!-- You'll need to replace this with your actual video file URL -->
-        <!-- YouTube videos can't be embedded directly - you need .mp4, .webm files -->
-        <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
-      </video>
+      <!-- Canvas element for DotLottie texture -->
+      <canvas id="lottie-canvas" width="512" height="512"></canvas>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     
     <a-entity mindar-image-target="targetIndex: 0">
-      <a-plane src="#video" 
-               position="0 0 0" 
-               height="0.552" 
+      <!-- Plane with DotLottie animation as texture -->
+      <a-plane position="0 0 0" 
+               height="1" 
                width="1" 
                rotation="0 0 0"
-               material="shader: flat">
+               material="src: #lottie-canvas; transparent: true; alphaTest: 0.1">
       </a-plane>
     </a-entity>
   </a-scene>
 
   <script>
+    let animationFrameId;
+    
+    // Custom A-Frame component for DotLottie integration
+    AFRAME.registerComponent('dotlottie-texture', {
+      init: function() {
+        this.canvas = document.getElementById('lottie-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.dotLottie = document.getElementById('dotlottie');
+        
+        // Wait for DotLottie to load
+        this.dotLottie.addEventListener('ready', () => {
+          console.log('DotLottie ready');
+          this.startRendering();
+        });
+      },
+      
+      startRendering: function() {
+        const renderFrame = () => {
+          // Clear canvas
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+          
+          // Draw DotLottie element to canvas
+          // Note: This is a simplified approach. For better performance,
+          // you might want to use html2canvas or similar library
+          try {
+            const svg = this.dotLottie.shadowRoot.querySelector('svg');
+            if (svg) {
+              const svgData = new XMLSerializer().serializeToString(svg);
+              const img = new Image();
+              img.onload = () => {
+                this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+              };
+              img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+            }
+          } catch (e) {
+            console.warn('Could not render DotLottie to canvas:', e);
+          }
+          
+          animationFrameId = requestAnimationFrame(renderFrame);
+        };
+        
+        renderFrame();
+      },
+      
+      remove: function() {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      }
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
       const scene = document.querySelector('a-scene');
       const loading = document.getElementById('loading');
-      const video = document.getElementById('video');
+      const plane = document.querySelector('a-plane');
+
+      // Add the custom component to the plane
+      plane.setAttribute('dotlottie-texture', '');
 
       // Hide loading when scene is ready
       scene.addEventListener('renderstart', function() {
         loading.style.display = 'none';
       });
 
-      // Ensure video plays when AR target is found
+      // Handle AR target detection
       scene.addEventListener('targetFound', function() {
-        if (video.paused) {
-          video.play().catch(e => console.log('Video play failed:', e));
+        console.log('AR target found - DotLottie animation should be visible');
+        // Restart animation when target is found
+        const dotLottie = document.getElementById('dotlottie');
+        if (dotLottie && dotLottie.play) {
+          dotLottie.play();
         }
       });
 
-      // Handle video loading
-      video.addEventListener('loadeddata', function() {
-        console.log('Video loaded successfully');
-      });
-
-      video.addEventListener('error', function(e) {
-        console.error('Video error:', e);
+      scene.addEventListener('targetLost', function() {
+        console.log('AR target lost');
       });
     });
   </script>
